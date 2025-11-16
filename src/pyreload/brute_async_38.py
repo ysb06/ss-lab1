@@ -7,7 +7,7 @@ CHAR_SET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 NOISE_SAMPLES = 10
 MAX_LENGTH = 128  # 플래그의 최대 길이 설정
 
-async def measure_char_time(prefix, char) -> tuple[str, float]:
+async def measure_char_time(prefix, char):
     """특정 문자에 대한 실행 시간을 비동기적으로 측정하고 중앙값을 반환합니다."""
     test_guess = prefix + char
     
