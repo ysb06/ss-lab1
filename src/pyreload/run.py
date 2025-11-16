@@ -1,13 +1,23 @@
 import subprocess
-import sys
 import re  # 정규 표현식을 사용하기 위해 추가
+import os
 
 
-def run_and_get_output(password_guess, proc_path = "../flush-reload/flush-reload"):
-    command = [proc_path, password_guess]
+def run_and_get_output(password_guess, proc_path="../flush-reload/flush-reload"):
+    proc_dir = os.path.dirname(proc_path)
+    if proc_dir == "":  # 경로가 비어있으면 현재 디렉터리 의미
+        proc_dir = "."
+    proc_name = os.path.basename(proc_path)
+    command = [f"./{proc_name}", password_guess]
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=proc_dir,
+        )
         return result.stdout
 
     except FileNotFoundError:
@@ -20,7 +30,7 @@ def run_and_get_output(password_guess, proc_path = "../flush-reload/flush-reload
         return None
 
 
-def get_time_from_run(password_guess, proc_path = "../flush-reload/flush-reload"):
+def get_time_from_run(password_guess, proc_path="../flush-reload/flush-reload"):
     stdout_output = run_and_get_output(password_guess, proc_path)
 
     if stdout_output:
