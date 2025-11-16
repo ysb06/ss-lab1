@@ -4,7 +4,7 @@ from pyreload.run import get_time_from_run
 
 CHAR_SET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 NOISE_SAMPLES = 10
-MAX_LENGTH = 64  # 플래그의 최대 길이 설정
+MAX_LENGTH = 128  # 플래그의 최대 길이 설정
 
 def run_attack():
     known_flag = ""
