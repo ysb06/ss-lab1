@@ -3,7 +3,7 @@ import sys
 import re  # 정규 표현식을 사용하기 위해 추가
 
 
-def run_and_get_output(password_guess: str, proc_path: str = "../flush-reload/flush-reload"):
+def run_and_get_output(password_guess, proc_path = "../flush-reload/flush-reload"):
     command = [proc_path, password_guess]
 
     try:
@@ -20,7 +20,7 @@ def run_and_get_output(password_guess: str, proc_path: str = "../flush-reload/fl
         return None
 
 
-def get_time_from_run(password_guess, proc_path: str = "../flush-reload/flush-reload") -> int | None:
+def get_time_from_run(password_guess, proc_path = "../flush-reload/flush-reload"):
     stdout_output = run_and_get_output(password_guess, proc_path)
 
     if stdout_output:
