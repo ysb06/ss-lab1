@@ -34,24 +34,40 @@ def test_character(c, known_flag, delay, max_samples):
             return (c, None, False, 0)
         time_measurements.append(time_val)
     
-    # 이상값 제거: Modified Z-Score (MAD) 방식
-    # 중앙값 기반으로 더 robust한 이상치 제거
-    filtered_times = remove_outliers_mad(time_measurements, threshold=3.5)
+    # 이상값 제거: IQR 방식 (더 안정적)
+    filtered_times = remove_outliers_iqr(time_measurements)
     
-    # 필터링 후 데이터가 너무 적으면 원본 사용
-    if len(filtered_times) < 3:
-        filtered_times = time_measurements
-    
-    reliable_time = statistics.mean(filtered_times)
+    # Median 사용 (극단값에 덜 민감)
+    reliable_time = statistics.median(filtered_times)
     std_dev = statistics.stdev(filtered_times) if len(filtered_times) > 1 else 0
     
     return (c, reliable_time, False, std_dev)
 
-def remove_outliers_mad(data, threshold=3.5):
-    median = statistics.median(data)
-    mad = statistics.median([abs(x - median) for x in data])
-    modified_z_scores = [0.6745 * (x - median) / mad for x in data]
-    return [x for i, x in enumerate(data) if abs(modified_z_scores[i]) <= threshold]
+def remove_outliers_iqr(data):
+    """
+    IQR 방식 이상치 제거 - MAD보다 안정적
+    Q1 - 1.5*IQR 과 Q3 + 1.5*IQR 범위 밖의 값 제거
+    """
+    if len(data) < 4:
+        return data
+    
+    sorted_data = sorted(data)
+    n = len(sorted_data)
+    
+    # Q1 (25th percentile), Q3 (75th percentile) 계산
+    q1_idx = n // 4
+    q3_idx = 3 * n // 4
+    q1 = sorted_data[q1_idx]
+    q3 = sorted_data[q3_idx]
+    
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    
+    filtered = [x for x in data if lower_bound <= x <= upper_bound]
+    
+    # 필터링 후 데이터가 너무 적으면 원본 사용
+    return filtered if len(filtered) >= 3 else data
 
 def run_attack(delay, max_workers, max_retries_ref, max_samples):
     """
