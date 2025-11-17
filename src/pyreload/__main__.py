@@ -20,6 +20,7 @@ def main():
 
     args = parser.parse_args()
     print("Starting Flush+Reload timing attack...")
+    print(f"Settings:\r\n    delay={args.delay}, max_workers={args.max_workers}")
     run_attack(delay=args.delay, max_workers=args.max_workers)
 
 
