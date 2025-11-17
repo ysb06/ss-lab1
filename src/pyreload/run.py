@@ -24,17 +24,18 @@ def run_and_get_output(
             check=True,
             cwd=proc_dir,
         )
-        print(f"Debug: Command output:\n{result.stdout}")
-        return None
+        # Exit code 0 means success - flag found!
+        print(f"Debug: Command output:\r\n{result.stdout}")
+        return (None, True)  # (output, success)
 
     except FileNotFoundError:
         print(f"오류: './flush-reload' 파일을 찾을 수 없습니다.")
-        return None
+        return (None, False)
     except subprocess.CalledProcessError as e:
-        return e.stdout
+        return (e.stdout, False)  # (output, success)
     except Exception as e:
         print(f"예기치 않은 오류 발생: {e}")
-        return None
+        return (None, False)
 
 
 def get_time_from_run(
@@ -42,19 +43,23 @@ def get_time_from_run(
     proc_path="../flush-reload/flush-reload",
     delay=0.032,
 ):
-    stdout_output = run_and_get_output(password_guess, proc_path, delay)
+    stdout_output, is_success = run_and_get_output(password_guess, proc_path, delay)
+
+    # If password is correct, return special marker
+    if is_success:
+        return (None, True)  # (time, success)
 
     if stdout_output:
         match = re.search(r"-> time: (\d+)", stdout_output)
 
         if match:
             time_str = match.group(1)
-            return int(time_str)
+            return (int(time_str), False)  # (time, success)
         else:
             print(f"오류: 출력에서 '-> time:' 패턴을 찾을 수 없습니다.")
             print("--- 전체 출력 ---")
             print(stdout_output)
             print("-----------------")
-            return None
+            return (None, False)
     else:
-        return None
+        return (None, False)

