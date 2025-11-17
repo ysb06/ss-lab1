@@ -1,15 +1,21 @@
 import subprocess
 import re  # 정규 표현식을 사용하기 위해 추가
 import os
+import time
 
 
-def run_and_get_output(password_guess, proc_path="../flush-reload/flush-reload"):
+def run_and_get_output(
+    password_guess,
+    proc_path="../flush-reload/flush-reload",
+    delay=0.1,
+):
     proc_dir = os.path.dirname(proc_path)
-    if proc_dir == "":  # 경로가 비어있으면 현재 디렉터리 의미
+    if proc_dir == "":
         proc_dir = "."
     proc_name = os.path.basename(proc_path)
     command = [f"./{proc_name}", password_guess]
 
+    time.sleep(delay)
     try:
         result = subprocess.run(
             command,
@@ -18,7 +24,8 @@ def run_and_get_output(password_guess, proc_path="../flush-reload/flush-reload")
             check=True,
             cwd=proc_dir,
         )
-        return result.stdout
+        print(f"Debug: Command output:\n{result.stdout}")
+        return None
 
     except FileNotFoundError:
         print(f"오류: './flush-reload' 파일을 찾을 수 없습니다.")
@@ -30,8 +37,12 @@ def run_and_get_output(password_guess, proc_path="../flush-reload/flush-reload")
         return None
 
 
-def get_time_from_run(password_guess, proc_path="../flush-reload/flush-reload"):
-    stdout_output = run_and_get_output(password_guess, proc_path)
+def get_time_from_run(
+    password_guess,
+    proc_path="../flush-reload/flush-reload",
+    delay=0.1,
+):
+    stdout_output = run_and_get_output(password_guess, proc_path, delay)
 
     if stdout_output:
         match = re.search(r"-> time: (\d+)", stdout_output)
