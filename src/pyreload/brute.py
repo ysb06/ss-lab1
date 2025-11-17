@@ -5,7 +5,7 @@ from pyreload.progprint import print_progress
 
 CHAR_SET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 NOISE_SAMPLES = 10
-MAX_LENGTH = 128  # 플래그의 최대 길이 설정
+MAX_LENGTH = 256  # 플래그의 최대 길이 설정
 
 def run_attack(delay=3.0):
     known_flag = ""

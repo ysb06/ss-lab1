@@ -7,7 +7,7 @@ import time
 def run_and_get_output(
     password_guess,
     proc_path="../flush-reload/flush-reload",
-    delay=0.1,
+    delay=0.032,
 ):
     proc_dir = os.path.dirname(proc_path)
     if proc_dir == "":
@@ -40,7 +40,7 @@ def run_and_get_output(
 def get_time_from_run(
     password_guess,
     proc_path="../flush-reload/flush-reload",
-    delay=0.1,
+    delay=0.032,
 ):
     stdout_output = run_and_get_output(password_guess, proc_path, delay)
 
