@@ -46,7 +46,7 @@ def test_character(c, known_flag, delay):
     return (c, reliable_time, False, std_dev)
 
 
-def run_attack(delay, max_workers):
+def run_attack(delay, max_workers, max_retries_ref):
     """
     병렬 처리를 사용한 Flush+Reload 공격
     
@@ -60,7 +60,7 @@ def run_attack(delay, max_workers):
     while position < MAX_LENGTH:
         results = {}
         retry_count = 0
-        max_retries = 3  # 최대 재시도 횟수
+        max_retries = max_retries_ref  # 최대 재시도 횟수
         
         while retry_count <= max_retries:
             if retry_count > 0:

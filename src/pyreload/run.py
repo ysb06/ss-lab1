@@ -23,6 +23,7 @@ def run_and_get_output(
             text=True,
             check=True,
             cwd=proc_dir,
+            timeout=16,
         )
         # Exit code 0 means success - flag found!
         print(f"Debug: Command output:\r\n{result.stdout}")
